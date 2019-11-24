@@ -1,0 +1,81 @@
+#Frozen2 Reviews
+
+#method1
+url <- "https://movie.naver.com/movie/point/af/list.nhn?st=mcode&sword=136873&target=after&page="
+library(rvest)
+
+page=1:10 
+
+# each page URL
+pages=paste0(url, page, sep='')
+
+# extract data from page url
+
+extract = function(url) {
+  
+  # page_url=pages[1] #1page만
+  
+  html <- read_html(url)  
+
+  #read_html()함수를 사용하여 웹페이지에 있는 데이터 가져오기
+  
+  table <- html %>% html_nodes("table") 
+  
+  #html_nodes함수를 사용하여 테이블 찾아 table 변수에 저장
+  
+  td <- table %>% html_nodes("td") #td를 찾아 td변수에 저장
+  
+  text <- td %>% html_text()
+  
+  text <- gsub("(\n)(\t)*", "", text) #back slash
+  
+  text <- text[8:length(text)]
+ 
+  df <- as.data.frame(matrix(text, nrow=10, ncol=3, byrow=TRUE)) 
+  
+}
+
+
+mat <- extract(pages[1])
+for(i in 2:length(page) ) mat <- rbind(mat, extract(pages[i]))
+
+
+
+#method2
+
+url_base <- "https://movie.naver.com/movie/point/af/list.nhn?st=mcode&sword=136873&target=after&page="
+
+all.reviews <- c()
+
+for(page in 1:10){
+  
+  url <- paste(url_base,page,sep='',encoding="euc-kr")
+  
+  # read_html 함수를 사용하여 html 페이지를 text 변수에 저장
+  
+  text <- read_html(url)
+  
+  
+  # html_nodes 함수를 사용하여 list_netizen class에 해당하는 부분을 table 변수에 저장
+  
+  table <- html_nodes(text,'.list_netizen')
+  
+  # html_nodes 함수를 사용하여 title class에 해당하는 부분을 content 변수에 저장
+  
+  content <- html_nodes(table, '.title')
+  
+  # html_text 함수를 사용하여 content변수에 저장한 html문서의 text 부분을 reviews 변수에 저장
+  
+  reviews <- html_text(content)
+  
+  if(length(reviews)==0){break}
+  
+  all.reviews <- c(all.reviews, reviews)
+  all.reviews <- gsub("(\n)(\t)*","",all.reviews) # \ is backslash
+  print(page)
+  
+}
+
+library(dplyr)
+all.reviews <- data_frame(id = 1:length(all.reviews),
+                             review = all.reviews)
